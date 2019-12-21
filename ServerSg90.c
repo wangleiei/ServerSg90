@@ -1,7 +1,7 @@
 #include "ServerSg90.h"
 /**********************************************************************************************************
 *	函 数 名: void ServerSg90_Inter(SERVERSG90_BASE *base,uint16_t interupt_frequs)
-*	功能说明: 该函数放入间隔调用的函数内，调用周期最好是10us
+*	功能说明: 该函数放入间隔调用的函数内(pin 模式下，pwm模式下不用)，调用周期最好是10us
 *	传    参: interupt_frequs调用间隔时间（单位us）
 *	返 回 值: 
 *   说    明: 
@@ -42,7 +42,19 @@ void ServerSg90_Init(SERVERSG90_BASE *base,void(*serversg90_pwm_l)(void),void(*s
 	base->angle = 0;	
 	base->period_count = 0;
 	
-	base->serversg90_h_timeus = 500;	
+	base->serversg90_h_timeus = 500;
+	base->pwm_mode	= PIN_MODE;
+}
+//增加直接使用pwm模式的方式
+void ServerSg90_InitPwmMode(SERVERSG90_BASE *base,void(*serversg90_pwm)(float pwm_pulse)){
+	base->serversg90_pwm_h = serversg90_pwm_h;
+	base->serversg90_pwm_l = serversg90_pwm_l;
+
+	base->pwm_mode	= PWM_MODE;
+	base->serversg90_pwm = serversg90_pwm;
+	
+	base->angle = 0;	
+	ServerSg90Control(base,0);
 }
 /**********************************************************************************************************
 *	函 数 名: void ServerSg90Control(SERVERSG90_BASE *base,float angle){
@@ -54,7 +66,10 @@ void ServerSg90_Init(SERVERSG90_BASE *base,void(*serversg90_pwm_l)(void),void(*s
 void ServerSg90Control(SERVERSG90_BASE *base,float angle){
 	if((angle >= 0.00) && (angle <= 180.00)){
 		base->angle = angle;	
-		
-		base->serversg90_h_timeus = 100.0/9.0*base->angle + 500.0;
+		if(base->pwm_mode == PWM_MODE){
+			base->serversg90_pwm(angle/18+2.5);
+		}else{
+			base->serversg90_h_timeus = 100.0/9.0*base->angle + 500.0;
+		}
 	}
 }
